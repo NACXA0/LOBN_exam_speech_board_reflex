@@ -2,9 +2,6 @@
 
 import reflex as rx
 
-from LOBN_exam_speech_board_reflex.state import AppState
-
-
 class AdminState(rx.State):
     """State for the admin page."""
     upload_tab: str = "text"
@@ -27,13 +24,57 @@ class AdminState(rx.State):
         dt = datetime.fromtimestamp(timestamp)
         return dt.strftime("%Y-%m-%d %H:%M")
 
+    @rx.event
     def set_text_content(self, text: str):
         """Set text content state."""
         AdminState.text_content = text
 
+    @rx.event
     def set_rename_new_name(self, name: str):
         """Set rename new name state."""
         AdminState.rename_new_name = name
+
+    @rx.event
+    def confirm_preview(self):
+        """Confirm and save the previewed bank."""
+        from LOBN_exam_speech_board_reflex.data.question_bank import QuestionBank, save_question_bank
+        if self.preview_bank:
+            bank = QuestionBank.from_dict(self.preview_bank)
+            if self.new_bank_name:
+                bank.name = self.new_bank_name
+                bank.filename = f"{self.new_bank_name}.json"
+            save_question_bank(bank)
+            self.upload_status = "题库保存成功"
+            self.preview_bank = {}
+            self.text_content = ""
+            self.new_bank_name = ""
+            self.bank_description = ""
+            # 刷新bank list
+            self.bank_list = __import__("LOBN_exam_speech_board_reflex.data.question_bank", fromlist=["get_all_bank_files"]).get_all_bank_files()
+
+    @rx.event
+    def discard_preview(self):
+        """Discard the preview and reset form."""
+        self.preview_bank = {}
+        self.upload_status = ""
+
+    @rx.event
+    def set_show_delete_confirm(self, value: str):
+        """Set the delete confirm dialog."""
+        AdminState.show_delete_confirm = value
+
+    @rx.event
+    def set_bank_description(self, value: str):
+        """Set bank description."""
+        AdminState.bank_description = value
+
+    @rx.event
+    def clean_import_file(self, filename: str):
+        """Clean an import file."""
+        from LOBN_exam_speech_board_reflex.data.importers import clean_import_file
+        clean_import_file(filename)
+        # Refresh import files list
+        self.refresh_import_files()
 
 
 def admin() -> rx.Component:
@@ -42,7 +83,7 @@ def admin() -> rx.Component:
         rx.flex(
             rx.heading("后台管理", size="7", weight="bold", color="var(--gray-12)"),
             rx.text("题库上传与管理", size="3", color="var(--gray-9)"),
-            direction="vertical",
+            direction="column",
             align="center",
             width="100%",
             padding_y="4",
@@ -53,10 +94,6 @@ def admin() -> rx.Component:
                 rx.tabs.trigger("文件上传", value="file"),
                 rx.tabs.trigger("离线上传", value="offline"),
                 rx.tabs.trigger("题库管理", value="manage"),
-                default_value="text",
-                color_scheme="gray",
-                variant="solid",
-                on_change=AdminState.upload_tab.__set__,
             ),
             # Tab 1: Online upload (text input)
             rx.tabs.content(
@@ -106,7 +143,7 @@ def admin() -> rx.Component:
                                 style={"fontStyle": "italic"},
                             ),
                         ),
-                        direction="vertical",
+                        direction="column",
                         spacing="3",
                     ),
                 ),
@@ -180,7 +217,7 @@ def admin() -> rx.Component:
                                 color_scheme="blue" if "成功" in AdminState.upload_status else "red",
                             ),
                         ),
-                        direction="vertical",
+                        direction="column",
                         spacing="4",
                         width="100%",
                         max_width="900px",
@@ -252,9 +289,9 @@ def admin() -> rx.Component:
                         rx.divider(),
                         rx.foreach(
                             AdminState.preview_bank.get("questions", [])[:5],
-                            lambda q: rx.flex(
+                            lambda questions: rx.flex(
                                 rx.text(
-                                    f"第{q.get('id', '?')}题: {q.get('question', '')[:50]}{'...' if len(q.get('question', '')) > 50 else ''}",
+                                    f"第{questions.get('id', '?')}题: {questions.get('question', '')[:50]}{rx.cond(questions.get('question', '').length() > 50, '...', '')}",
                                     size="2",
                                     color="var(--gray-11)",
                                 ),
@@ -269,7 +306,7 @@ def admin() -> rx.Component:
                                 style={"fontStyle": "italic"},
                             ),
                         ),
-                        direction="vertical",
+                        direction="column",
                         spacing="3",
                     ),
                     width="100%",
@@ -278,11 +315,6 @@ def admin() -> rx.Component:
                     border_left="4px solid var(--green-6)",
                 ),
             ),
-            direction="vertical",
-            spacing="4",
-            width="100%",
-            max_width="900px",
-        ),
         # Tab 2: File upload
         rx.tabs.content(
             rx.flex(
@@ -307,7 +339,7 @@ def admin() -> rx.Component:
                             rx.icon("upload-cloud", size=48, color="var(--gray-7)"),
                             rx.text("点击或拖拽文件到此处", size="3", color="var(--gray-9)"),
                             rx.text("支持 .txt, .md, .docx 格式", size="2", color="var(--gray-7)"),
-                            direction="vertical",
+                            direction="column",
                             align="center",
                             spacing="3",
                         ),
@@ -339,7 +371,7 @@ def admin() -> rx.Component:
                                     color="var(--gray-11)",
                                 ),
                             ),
-                            direction="vertical",
+                            direction="column",
                             spacing="3",
                         ),
                         width="100%",
@@ -367,7 +399,7 @@ def admin() -> rx.Component:
                     ),
                     spacing="3",
                 ),
-                direction="vertical",
+                direction="column",
                 spacing="4",
                 width="100%",
                 max_width="900px",
@@ -403,7 +435,7 @@ def admin() -> rx.Component:
                             size="3",
                             color="var(--gray-9)",
                         ),
-                        direction="vertical",
+                        direction="column",
                         spacing="3",
                     ),
                     width="100%",
@@ -465,7 +497,7 @@ def admin() -> rx.Component:
                         color_scheme=rx.cond(AdminState.upload_status.contains("成功"), "blue", "red"),
                     )
                 ),
-                direction="vertical",
+                direction="column",
                 spacing="4",
                 width="100%",
                 max_width="900px",
@@ -481,7 +513,7 @@ def admin() -> rx.Component:
                         rx.flex(
                             rx.text(bank.get("name", "未命名"), size="3", weight="medium"),
                             rx.text(
-                                bank.get("description", "")[:50] + ("..." if len(bank.get("description", "")) > 50 else ""),
+                                f"{bank.get('description', '')[:50] + (rx.cond(bank.get('description', '').length() > 50, '...', ''))}",
                                 size="2",
                                 color="var(--gray-8)",
                                 style={"fontStyle": "italic"},
@@ -638,18 +670,19 @@ def admin() -> rx.Component:
                         open=AdminState.show_delete_confirm.startswith("delete:"),
                     ),
                 ),
-                direction="vertical",
+                direction="column",
                 spacing="4",
                 width="100%",
                 max_width="900px",
                 value="manage",
             ),
-            default_value="text",
-            color_scheme="gray",
-            variant="solid",
             width="100%",
             max_width="900px",
             padding_x="4",
             padding_y="8",
+            default_value="text",
+            color_scheme="gray",
+            variant="solid",
+            on_change=AdminState.set_upload_tab,
         )
     )
