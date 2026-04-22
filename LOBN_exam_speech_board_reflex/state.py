@@ -29,7 +29,7 @@ from LOBN_exam_speech_board_reflex.data.importers import (
     clean_import_file,
     image_to_base64,
 )
-from LOBN_exam_speech_board_reflex.pages.admin import AdminState
+# AdminState moved to the bottom of this file to avoid circular imports
 
 
 class AppState(rx.State):
@@ -271,6 +271,55 @@ class AppState(rx.State):
             self.upload_progress = 0
 
     @rx.event
+    async def handle_file_upload(self, files: list[rx.UploadFile]):
+        """Handle file upload from the file upload tab."""
+        get_AdminState = self.get_state(AdminState)
+        if not files:
+            self.upload_status = "未选择文件"
+            return
+
+        file = files[0]
+        try:
+            self.upload_status = "正在解析..."
+            content = await file.read()
+            filename = file.filename or "uploaded.txt"
+
+            if filename.endswith(".docx"):
+                import tempfile
+                with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
+                    tmp.write(content)
+                    tmp_path = tmp.name
+                bank = import_docx_content(tmp_path, filename)
+                os.unlink(tmp_path)
+            elif filename.endswith(".json"):
+                text = content.decode("utf-8")
+                bank = import_json_content(text, filename)
+            elif filename.endswith(".md"):
+                text = content.decode("utf-8")
+                bank = import_markdown_content(text, filename)
+            else:
+                text = content.decode("utf-8")
+                bank = parse_text_to_bank(text, filename)
+
+            desc = getattr(get_AdminState, 'bank_description', '').strip() if hasattr(get_AdminState, 'bank_description') else ""
+            if desc:
+                bank_to_dict = bank.to_dict()
+                if "description" not in bank_to_dict:
+                    bank_to_dict["description"] = desc
+                    from LOBN_exam_speech_board_reflex.data.question_bank import QuestionBank
+                    bank = QuestionBank.from_dict(bank_to_dict)
+
+            self.preview_bank = bank.to_dict()
+            self.uploaded_file = {
+                "filename": filename,
+                "size": len(content),
+            }
+            self.upload_status = "解析完成，请确认内容"
+        except Exception as e:
+            self.upload_status = f"解析失败：{str(e)}"
+            self.uploaded_file = None
+
+    @rx.event
     def refresh_import_files(self):
         """Refresh the import files list."""
         self.import_files = get_import_files()
@@ -335,3 +384,194 @@ class AppState(rx.State):
         except Exception as e:
             print(f"保存描述失败：{e}")
             return False
+
+
+class AdminState(AppState):
+    """State for the admin page. Inherits AppState for shared fields (preview_bank, upload_status, etc.)."""
+    upload_tab: str = "text"
+    text_content: str = ""
+    md_content: str = ""
+    json_content: str = ""
+    new_bank_name: str = ""
+    bank_description: str = ""  # 题库描述
+    rename_filename: str = ""
+    rename_new_name: str = ""
+    show_delete_confirm: str = ""
+    preview_mode: bool = False
+    current_action_bank_filename: str = ""  # 当前操作的题库文件名
+    current_action_type: str = ""  # 当前操作类型：rename, edit_desc, delete
+
+    @staticmethod
+    def _format_time(timestamp) -> str:
+        """Format timestamp to readable date string."""
+        if not timestamp:
+            return "未知"
+        from datetime import datetime
+        dt = datetime.fromtimestamp(timestamp)
+        return dt.strftime("%Y-%m-%d %H:%M")
+
+    # ---- Computed vars for proper typing in rx.foreach ----
+
+    @rx.var
+    def preview_questions(self) -> list[dict]:
+        """Get preview questions list with explicit typing for rx.foreach."""
+        questions = self.preview_bank.get("questions", [])
+        return questions if isinstance(questions, list) else []
+
+    @rx.var
+    def preview_questions_formatted(self) -> list[dict]:
+        """Get preview questions with formatted display text."""
+        questions = self.preview_bank.get("questions", [])
+        if not isinstance(questions, list):
+            return []
+        result = []
+        for q in questions:
+            q_copy = dict(q)
+            q_id = q.get("id", "?")
+            question_text = q.get("question", "")
+            q_copy["display_brief"] = f"第{q_id}题：{question_text[:50]}"
+            q_copy["display_id"] = f"第{q_id}题"
+            q_copy["display_question"] = question_text
+            result.append(q_copy)
+        return result
+
+    @rx.var
+    def preview_questions_brief(self) -> list[dict]:
+        """Get first 5 preview questions with formatted display text."""
+        return self.preview_questions_formatted[:5]
+
+    @rx.var
+    def preview_total_questions(self) -> int:
+        """Get total questions count from preview bank."""
+        return self.preview_bank.get("total_questions", 0)
+
+    @rx.var
+    def has_preview(self) -> bool:
+        """Whether there is a preview bank loaded."""
+        return bool(self.preview_bank)
+
+    @rx.var
+    def import_files_list(self) -> list[dict]:
+        """Get import files list with explicit typing for rx.foreach."""
+        return self.import_files if isinstance(self.import_files, list) else []
+
+    @rx.var
+    def bank_list_items(self) -> list[dict]:
+        """Get bank list with explicit typing for rx.foreach."""
+        return self.bank_list if isinstance(self.bank_list, list) else []
+
+    @rx.var
+    def bank_list_formatted(self) -> list[dict]:
+        """Get bank list with formatted fields for display."""
+        banks = self.bank_list if isinstance(self.bank_list, list) else []
+        result = []
+        for bank in banks:
+            bank_copy = dict(bank)
+            description = bank.get("description", "")
+            bank_copy["display_description"] = f"{description[:50]}{'...' if len(description) > 50 else ''}"
+            # 格式化时间
+            modified_timestamp = bank.get("modified", 0)
+            if modified_timestamp:
+                from datetime import datetime
+                dt = datetime.fromtimestamp(modified_timestamp)
+                bank_copy["display_modified"] = dt.strftime("%Y-%m-%d %H:%M")
+            else:
+                bank_copy["display_modified"] = "未知"
+            result.append(bank_copy)
+        return result
+
+    @rx.var
+    def uploaded_file_size_kb(self) -> str:
+        """Get uploaded file size in KB as formatted string."""
+        if self.uploaded_file:
+            size_bytes = self.uploaded_file.get("size", 0)
+            return f"{size_bytes / 1024:.1f} KB"
+        return "0 KB"
+
+    @rx.var
+    def import_files_with_size(self) -> list[dict]:
+        """Get import files list with formatted size."""
+        files = self.import_files if isinstance(self.import_files, list) else []
+        result = []
+        for f in files:
+            file_copy = dict(f)
+            size_bytes = f.get("size", 0)
+            file_copy["size_kb"] = f"{size_bytes / 1024:.1f} KB"
+            result.append(file_copy)
+        return result
+
+    @rx.event
+    def set_upload_tab(self, value: str):
+        """Set the active upload tab."""
+        self.upload_tab = value
+
+    @rx.event
+    def set_text_content(self, text: str):
+        """Set text content state."""
+        AdminState.text_content = text
+
+    @rx.event
+    def set_rename_new_name(self, name: str):
+        """Set rename new name state."""
+        AdminState.rename_new_name = name
+
+    @rx.event
+    def confirm_preview(self):
+        """Confirm and save the previewed bank."""
+        if self.preview_bank:
+            bank = QuestionBank.from_dict(self.preview_bank)
+            if self.new_bank_name:
+                bank.name = self.new_bank_name
+                bank.filename = f"{self.new_bank_name}.json"
+            save_question_bank(bank)
+            self.upload_status = "题库保存成功"
+            self.preview_bank = {}
+            self.text_content = ""
+            self.new_bank_name = ""
+            self.bank_description = ""
+            self.uploaded_file = None
+            # 刷新bank list
+            self.bank_list = get_all_bank_files()
+
+    @rx.event
+    def discard_preview(self):
+        """Discard the preview and reset form."""
+        self.preview_bank = {}
+        self.upload_status = ""
+        self.uploaded_file = None
+
+    @rx.event
+    def set_show_delete_confirm(self, value: str):
+        """Set the delete confirm dialog."""
+        AdminState.show_delete_confirm = value
+
+    @rx.event
+    def open_action_dialog(self, action_type: str, filename: str):
+        """Open action dialog for a specific bank."""
+        AdminState.current_action_type = action_type
+        AdminState.current_action_bank_filename = filename
+        AdminState.show_delete_confirm = f"{action_type}:{filename}"
+
+    @rx.event
+    def close_action_dialog(self):
+        """Close action dialog."""
+        AdminState.current_action_type = ""
+        AdminState.current_action_bank_filename = ""
+        AdminState.show_delete_confirm = ""
+
+    @rx.event
+    def set_bank_description(self, value: str):
+        """Set bank description."""
+        AdminState.bank_description = value
+
+    @rx.event
+    def set_new_bank_name(self, value: str):
+        """Set new bank name."""
+        AdminState.new_bank_name = value
+
+    @rx.event
+    def clean_import_file(self, filename: str):
+        """Clean an import file."""
+        clean_import_file(filename)
+        # Refresh import files list
+        self.refresh_import_files()
