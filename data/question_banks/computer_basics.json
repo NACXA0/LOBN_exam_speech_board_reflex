@@ -1,0 +1,77 @@
+{
+  "name": "计算机基础知识题库",
+  "filename": "computer_basics.json",
+  "description": "包含计算机基础、网络、操作系统等常见知识点的选择题库，适用于计算机等级考试和面试准备。",
+  "questions": [
+    {
+      "id": 1,
+      "question": "计算机中，CPU的全称是什么？",
+      "options": ["Central Processing Unit", "Computer Personal Unit", "Central Program Utility", "Computer Processing Unit"],
+      "answer": "A",
+      "explanation": "CPU的全称是Central Processing Unit（中央处理器），是计算机的核心部件，负责执行指令和处理数据。"
+    },
+    {
+      "id": 2,
+      "question": "1KB等于多少字节？",
+      "options": ["1000字节", "1024字节", "512字节", "2048字节"],
+      "answer": "B",
+      "explanation": "在计算机中，1KB（千字节）等于1024字节（2的10次方）。注意：硬盘厂商通常使用1000字节作为1KB。"
+    },
+    {
+      "id": 3,
+      "question": "以下哪个不是操作系统？",
+      "options": ["Windows", "Linux", "Oracle", "macOS"],
+      "answer": "C",
+      "explanation": "Oracle是数据库管理系统（DBMS），不是操作系统。Windows、Linux和macOS都是常见的操作系统。"
+    },
+    {
+      "id": 4,
+      "question": "HTTP协议默认使用哪个端口？",
+      "options": ["21", "80", "443", "8080"],
+      "answer": "B",
+      "explanation": "HTTP协议默认使用80端口。HTTPS使用443端口，FTP使用21端口，8080常作为HTTP的替代端口。"
+    },
+    {
+      "id": 5,
+      "question": "在计算机网络中，DNS的作用是？",
+      "options": ["加密数据传输", "将域名转换为IP地址", "分配IP地址", "管理网络流量"],
+      "answer": "B",
+      "explanation": "DNS（Domain Name System，域名系统）的主要作用是将人类可读的域名（如www.example.com）转换为计算机可识别的IP地址。"
+    },
+    {
+      "id": 6,
+      "question": "以下哪种存储设备的速度最快？",
+      "options": ["硬盘（HDD）", "固态硬盘（SSD）", "内存（RAM）", "CPU缓存"],
+      "answer": "D",
+      "explanation": "CPU缓存（L1/L2/L3 Cache）速度最快，其次是内存（RAM），然后是SSD，最慢的是传统HDD。速度：缓存 > RAM > SSD > HDD。"
+    },
+    {
+      "id": 7,
+      "question": "二进制数1010转换为十进制是多少？",
+      "options": ["8", "10", "12", "14"],
+      "answer": "B",
+      "explanation": "二进制1010 = 1×2³ + 0×2² + 1×2¹ + 0×2⁰ = 8 + 0 + 2 + 0 = 10。"
+    },
+    {
+      "id": 8,
+      "question": "以下哪个协议用于发送电子邮件？",
+      "options": ["POP3", "IMAP", "SMTP", "HTTP"],
+      "answer": "C",
+      "explanation": "SMTP（Simple Mail Transfer Protocol）用于发送邮件。POP3和IMAP用于接收邮件，HTTP用于网页浏览。"
+    },
+    {
+      "id": 9,
+      "question": "在关系型数据库中，SQL是什么的缩写？",
+      "options": ["Structured Query Language", "Simple Question Language", "System Query Logic", "Standard Question Language"],
+      "answer": "A",
+      "explanation": "SQL的全称是Structured Query Language（结构化查询语言），是用于管理关系型数据库的标准语言。"
+    },
+    {
+      "id": 10,
+      "question": "IPv4地址由多少位二进制数组成？",
+      "options": ["16位", "32位", "64位", "128位"],
+      "answer": "B",
+      "explanation": "IPv4地址由32位二进制数组成，通常表示为四个十进制数（如192.168.1.1）。IPv6使用128位。"
+    }
+  ]
+}

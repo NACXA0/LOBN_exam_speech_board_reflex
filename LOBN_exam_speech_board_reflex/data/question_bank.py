@@ -17,6 +17,7 @@ class Question:
     answer: str
     explanation: str = ""
     images: List[str] = field(default_factory=list)  # base64 image strings or paths
+    type: str = "single"  # single / multiple / judge
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -43,6 +44,7 @@ class QuestionBank:
             "name": self.name,
             "filename": self.filename,
             "description": self.description,
+            "total_questions": len(self.questions),
             "questions": [q.to_dict() for q in self.questions],
         }
 
@@ -59,8 +61,9 @@ class QuestionBank:
 
 # Base directories
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+ASSETS_DIR = os.path.join(BASE_DIR, "assets")
 DATA_DIR = os.path.join(BASE_DIR, "data")
-QUESTION_BANKS_DIR = os.path.join(DATA_DIR, "question_banks")
+QUESTION_BANKS_DIR = os.path.join(ASSETS_DIR, "question_banks")
 IMPORT_DIR = os.path.join(DATA_DIR, "import")
 TEMP_DIR = os.path.join(DATA_DIR, "temp")
 
@@ -72,6 +75,21 @@ def ensure_directories():
     os.makedirs(TEMP_DIR, exist_ok=True)
 
 
+def _count_questions(fpath: str, fname: str) -> int:
+    """Count questions in a bank file without full parsing."""
+    try:
+        if fname.endswith(".json"):
+            with open(fpath, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, dict):
+                return len(data.get("questions", []))
+            elif isinstance(data, list):
+                return len(data)
+    except Exception:
+        pass
+    return 0
+
+
 def get_all_bank_files() -> List[dict]:
     """Get list of available question bank files."""
     ensure_directories()
@@ -79,12 +97,26 @@ def get_all_bank_files() -> List[dict]:
     for fname in sorted(os.listdir(QUESTION_BANKS_DIR)):
         if fname.endswith((".json", ".md")):
             fpath = os.path.join(QUESTION_BANKS_DIR, fname)
-            banks.append({
+            bank_info = {
                 "filename": fname,
                 "name": os.path.splitext(fname)[0],
                 "size": os.path.getsize(fpath),
                 "modified": os.path.getmtime(fpath),
-            })
+                "total_questions": _count_questions(fpath, fname),
+                "description": "",
+            }
+            # 读取 JSON 文件中的 description 和 name
+            if fname.endswith(".json"):
+                try:
+                    with open(fpath, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    if isinstance(data, dict):
+                        bank_info["description"] = data.get("description", "")
+                        if data.get("name"):
+                            bank_info["name"] = data["name"]
+                except Exception:
+                    pass
+            banks.append(bank_info)
     return banks
 
 
@@ -247,15 +279,30 @@ def _parse_markdown(content: str, filename: str) -> QuestionBank:
     return QuestionBank(name=name, filename=filename, questions=questions)
 
 
+def _detect_question_type(options: list[str], answer: str) -> str:
+    """Detect question type from options and answer."""
+    opts = [opt.strip() for opt in options]
+    if len(opts) == 2 and opts in (["√", "×"], ["对", "错"], ["正确", "错误"], ["A.正确", "B.错误"]):
+        return "judge"
+    ans = answer.strip().upper()
+    if len(ans) > 1:
+        return "multiple"
+    return "single"
+
+
 def _build_question(data: dict, field_data: dict) -> Question:
     """Build a Question from parsed data."""
+    options = data.get("options", [])
+    answer = data.get("answer", "")
+    q_type = data.get("type", _detect_question_type(options, answer))
     return Question(
         id=0,  # Will be assigned later
         question=data.get("question", ""),
-        options=data.get("options", []),
-        answer=data.get("answer", ""),
+        options=options,
+        answer=answer,
         explanation=data.get("explanation", ""),
         images=data.get("images", []),
+        type=q_type,
     )
 
 

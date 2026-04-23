@@ -1,0 +1,77 @@
+{
+  "name": "Python编程题库",
+  "filename": "python_programming.json",
+  "description": "Python编程语言基础题库，涵盖语法、数据结构、函数等核心知识点，适合初学者和面试复习。",
+  "questions": [
+    {
+      "id": 1,
+      "question": "Python中哪个关键字用于定义函数？",
+      "options": ["function", "def", "func", "define"],
+      "answer": "B",
+      "explanation": "Python使用def关键字定义函数，例如：def my_function():  "
+    },
+    {
+      "id": 2,
+      "question": "以下哪个数据类型在Python中是不可变的？",
+      "options": ["list", "dict", "tuple", "set"],
+      "answer": "C",
+      "explanation": "tuple（元组）是不可变数据类型，创建后不能修改。list、dict、set都是可变的。"
+    },
+    {
+      "id": 3,
+      "question": "Python中如何表示注释？",
+      "options": ["//", "#", "/* */", "--"],
+      "answer": "B",
+      "explanation": "Python使用#进行单行注释，使用三引号('''或\"\"\")进行多行注释。"
+    },
+    {
+      "id": 4,
+      "question": "以下哪个方法用于在列表末尾添加元素？",
+      "options": ["insert()", "append()", "add()", "extend()"],
+      "answer": "B",
+      "explanation": "append()在列表末尾添加单个元素。insert()在指定位置插入，extend()添加多个元素，add()是集合的方法。"
+    },
+    {
+      "id": 5,
+      "question": "Python中True和False属于哪种数据类型？",
+      "options": ["int", "str", "bool", "NoneType"],
+      "answer": "C",
+      "explanation": "True和False是布尔类型（bool），在Python中bool是int的子类，True等于1，False等于0。"
+    },
+    {
+      "id": 6,
+      "question": "以下哪个是Python的正确循环语法？",
+      "options": ["for i in range(5):", "for (i=0; i<5; i++)", "foreach i in range(5)", "loop i from 0 to 5"],
+      "answer": "A",
+      "explanation": "Python使用for i in range(5): 语法。C风格的for循环和foreach、loop都不是Python的语法。"
+    },
+    {
+      "id": 7,
+      "question": "Python中如何获取字典的所有键？",
+      "options": ["dict.values()", "dict.keys()", "dict.items()", "dict.get_keys()"],
+      "answer": "B",
+      "explanation": "dict.keys()返回字典的所有键。values()返回值，items()返回键值对，get_keys()不存在。"
+    },
+    {
+      "id": 8,
+      "question": "以下哪个异常在除以零时抛出？",
+      "options": ["ValueError", "TypeError", "ZeroDivisionError", "ArithmeticError"],
+      "answer": "C",
+      "explanation": "除以零会抛出ZeroDivisionError。ValueError是值错误，TypeError是类型错误。"
+    },
+    {
+      "id": 9,
+      "question": "Python中lambda表达式的正确用法是？",
+      "options": ["lambda x: x*2", "lambda(x) { return x*2 }", "function(x) => x*2", "def lambda x: x*2"],
+      "answer": "A",
+      "explanation": "Python的lambda表达式语法是 lambda 参数: 表达式，例如 lambda x: x*2。"
+    },
+    {
+      "id": 10,
+      "question": "以下哪个模块用于处理日期和时间？",
+      "options": ["time", "datetime", "date", "以上都是"],
+      "answer": "D",
+      "explanation": "Python提供了time、datetime、calendar等多个模块来处理日期和时间，它们各有不同的功能和用途。"
+    }
+  ]
+}
