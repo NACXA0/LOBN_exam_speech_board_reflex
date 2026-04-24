@@ -18,6 +18,7 @@ class Question:
     explanation: str = ""
     images: List[str] = field(default_factory=list)  # base64 image strings or paths
     type: str = "single"  # single / multiple / judge
+    speech: str = ""  # 演讲稿内容
 
     def to_dict(self) -> dict:
         return asdict(self)

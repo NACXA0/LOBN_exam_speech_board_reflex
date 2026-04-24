@@ -2,6 +2,7 @@
   "name": "计算机基础知识题库",
   "filename": "computer_basics.json",
   "description": "123434",
+  "total_questions": 10,
   "questions": [
     {
       "id": 1,
@@ -12,10 +13,11 @@
         "3",
         "4"
       ],
-      "answer": "",
+      "answer": "BC",
       "explanation": "CPU的全称是Central Processing Unit（中央处理器），是计算机的核心部件，负责执行指令和处理数据。123",
       "images": [],
-      "type": "single"
+      "type": "multiple",
+      "speech": "12341241234124123412434457574574575676"
     },
     {
       "id": 2,
@@ -29,7 +31,8 @@
       "answer": "B",
       "explanation": "在计算机中，1KB（千字节）等于1024字节（2的10次方）。注意：硬盘厂商通常使用1000字节作为1KB。",
       "images": [],
-      "type": "single"
+      "type": "single",
+      "speech": ""
     },
     {
       "id": 3,
@@ -43,7 +46,8 @@
       "answer": "C",
       "explanation": "Oracle是数据库管理系统（DBMS），不是操作系统。Windows、Linux和macOS都是常见的操作系统。",
       "images": [],
-      "type": "single"
+      "type": "single",
+      "speech": ""
     },
     {
       "id": 4,
@@ -57,7 +61,8 @@
       "answer": "B",
       "explanation": "HTTP协议默认使用80端口。HTTPS使用443端口，FTP使用21端口，8080常作为HTTP的替代端口。",
       "images": [],
-      "type": "single"
+      "type": "single",
+      "speech": ""
     },
     {
       "id": 5,
@@ -71,7 +76,8 @@
       "answer": "B",
       "explanation": "DNS（Domain Name System，域名系统）的主要作用是将人类可读的域名（如www.example.com）转换为计算机可识别的IP地址。",
       "images": [],
-      "type": "single"
+      "type": "single",
+      "speech": ""
     },
     {
       "id": 6,
@@ -85,7 +91,8 @@
       "answer": "D",
       "explanation": "CPU缓存（L1/L2/L3 Cache）速度最快，其次是内存（RAM），然后是SSD，最慢的是传统HDD。速度：缓存 > RAM > SSD > HDD。",
       "images": [],
-      "type": "single"
+      "type": "single",
+      "speech": ""
     },
     {
       "id": 7,
@@ -99,7 +106,8 @@
       "answer": "B",
       "explanation": "二进制1010 = 1×2³ + 0×2² + 1×2¹ + 0×2⁰ = 8 + 0 + 2 + 0 = 10。",
       "images": [],
-      "type": "single"
+      "type": "single",
+      "speech": ""
     },
     {
       "id": 8,
@@ -113,7 +121,8 @@
       "answer": "C",
       "explanation": "SMTP（Simple Mail Transfer Protocol）用于发送邮件。POP3和IMAP用于接收邮件，HTTP用于网页浏览。",
       "images": [],
-      "type": "single"
+      "type": "single",
+      "speech": ""
     },
     {
       "id": 9,
@@ -127,7 +136,8 @@
       "answer": "A",
       "explanation": "SQL的全称是Structured Query Language（结构化查询语言），是用于管理关系型数据库的标准语言。",
       "images": [],
-      "type": "single"
+      "type": "single",
+      "speech": ""
     },
     {
       "id": 10,
@@ -141,7 +151,8 @@
       "answer": "C",
       "explanation": "IPv4地址由32位二进制数组成，通常表示为四个十进制数（如192.168.1.1）。IPv6使用128位。",
       "images": [],
-      "type": "single"
+      "type": "single",
+      "speech": ""
     }
   ]
 }

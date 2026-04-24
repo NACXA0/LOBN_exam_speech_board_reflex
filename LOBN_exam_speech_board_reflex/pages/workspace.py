@@ -193,6 +193,66 @@ def _explanation_area() -> rx.Component:
     )
 
 
+def _speech_explanation_area() -> rx.Component:
+    """讲题布局专用解析卡片 - 始终显示，不受show_explanation控制。"""
+    return rx.fragment(
+        rx.cond(
+            WorkspaceState.current_question_explanation != "",
+            rx.flex(
+                rx.flex(
+                    rx.text("答案解析", size="3", weight="bold", color="var(--green-10)"),
+                    spacing="2",
+                    align="center",
+                ),
+                rx.text(
+                    WorkspaceState.current_question_explanation,
+                    size="3",
+                    color="var(--gray-11)",
+                    line_height="1.6",
+                ),
+                direction="column",
+                spacing="2",
+                width="100%",
+                padding="3",
+                background_color="var(--green-2)",
+                border="0.0625rem solid var(--green-5)",
+                radius="medium",
+            ),
+        ),
+    )
+
+
+def _speech_area() -> rx.Component:
+    """Render speech script card."""
+    return rx.fragment(
+        rx.cond(
+            WorkspaceState.current_question_speech != "",
+            rx.flex(
+                rx.flex(
+                    rx.icon("file-text", size=14, color="var(--blue-9)"),
+                    rx.text("演讲稿", size="3", weight="bold", color="var(--blue-10)"),
+                    spacing="2",
+                    align="center",
+                ),
+                rx.text(
+                    WorkspaceState.current_question_speech,
+                    size="3",
+                    color="var(--gray-11)",
+                    line_height="1.7",
+                    white_space="pre-wrap",
+                ),
+                direction="column",
+                spacing="2",
+                width="100%",
+                padding="3",
+                background_color="var(--blue-2)",
+                border="0.0625rem solid var(--blue-5)",
+                radius="medium",
+            ),
+        ),
+    )
+
+
 def _navigation() -> rx.Component:
     """呈现轻量级的导航统计数据。"""
     stats = WorkspaceState.answer_statistics
@@ -237,26 +297,19 @@ def _toolbar() -> rx.Component:
             color="var(--gray-10)",
         ),
         rx.spacer(),
-        rx.cond(
-            WorkspaceState.right_panel_collapsed,
-            rx.button(
-                rx.icon("panel-right-open", size=32),
-                size="4",
-                variant="ghost",
-                color_scheme="gray",
-                on_click=WorkspaceState.toggle_right_panel,
-                tooltip="展开选项栏",
-                tooltip_shade="3",
+        # 布局切换下拉菜单
+        rx.select.root(
+            rx.select.trigger(
+                variant="surface",
+                size="3",
+                placeholder="选择布局",
             ),
-            rx.button(
-                rx.icon("panel-right-close", size=32),
-                size="4",
-                variant="ghost",
-                color_scheme="gray",
-                on_click=WorkspaceState.toggle_right_panel,
-                tooltip="收起选项栏",
-                tooltip_shade="3",
+            rx.select.content(
+                rx.select.item("讲题布局", value="speech"),
+                rx.select.item("经典布局", value="classic"),
             ),
+            value=WorkspaceState.workspace_layout,
+            on_change=WorkspaceState.set_workspace_layout,
         ),
         rx.button(
             rx.icon("rotate-ccw", size=32),
@@ -298,6 +351,10 @@ def _empty_state() -> rx.Component:
         height="60vh",
     )
 
+
+# ============================================================
+# 经典布局（旧布局）
+# ============================================================
 
 def _left_column() -> rx.Component:
     """Left column: question header + text, auto-centered when short."""
@@ -353,6 +410,216 @@ def _right_column() -> rx.Component:
         spacing="0",
         width="100%",
         height="100%",
+    )
+
+
+def _classic_layout() -> rx.Component:
+    """经典双栏布局：左侧题干，右侧选项+解析。"""
+    return rx.flex(
+        # Left card
+        rx.box(
+            _left_column(),
+            background_color=WorkspaceState.whiteboard_bg_color,
+            style={"border_radius": "0.75rem"},
+            box_shadow="0 0.0625rem 0.25rem rgba(0,0,0,0.04)",
+            flex="1",
+            min_width="0",
+            overflow="hidden",
+        ),
+        # Right card (collapsible)
+        rx.cond(
+            WorkspaceState.right_panel_collapsed,
+            rx.fragment(),
+            rx.box(
+                _right_column(),
+                background_color=WorkspaceState.whiteboard_bg_color,
+                style={"border_radius": "0.75rem"},
+                box_shadow="0 0.0625rem 0.25rem rgba(0,0,0,0.04)",
+                width="26rem",
+                min_width="22rem",
+                max_width="30rem",
+                overflow="hidden",
+            ),
+        ),
+        direction="row",
+        spacing="4",
+        width="100%",
+        flex="1",
+        overflow="hidden",
+        padding="4",
+        background_color="#f2f2f0",
+    )
+
+
+# ============================================================
+# 讲题布局（新默认布局）
+# ============================================================
+
+def _right_panel_tab_bar() -> rx.Component:
+    """右侧面板三段式Tab控制栏 + 常驻正确答案。"""
+    return rx.flex(
+        rx.tabs.root(
+            rx.tabs.list(
+                rx.tabs.trigger("解析", value="explanation"),
+                rx.tabs.trigger("各半", value="half"),
+                rx.tabs.trigger("演讲稿", value="speech"),
+            ),
+            default_value=WorkspaceState.right_panel_tab,
+            on_change=WorkspaceState.set_right_panel_tab,
+            style={"flex": "1"},
+        ),
+        # 右侧常驻正确答案
+        rx.cond(
+            WorkspaceState.current_bank_name != "",
+            rx.badge(
+                rx.cond(WorkspaceState.current_question_answer != "", WorkspaceState.current_question_answer, '无'),
+                color_scheme="green",
+                variant="solid",
+                size="3",
+                radius="full",
+            ),
+        ),
+        spacing="2",
+        align="center",
+        width="100%",
+    )
+
+
+def _speech_right_column() -> rx.Component:
+    """讲题布局右侧：解析+演讲稿，Tab控制显示比例。"""
+    # 根据tab状态决定解析和演讲稿的flex比例
+    # explanation: 解析flex=1, 演讲稿flex=0
+    # half: 解析flex=1, 演讲稿flex=1
+    # speech: 解析flex=0, 演讲稿flex=1
+    explanation_flex = rx.cond(
+        WorkspaceState.right_panel_tab == "explanation", "1",
+        rx.cond(
+            WorkspaceState.right_panel_tab == "half", "1",
+            "0",
+        ),
+    )
+    speech_flex = rx.cond(
+        WorkspaceState.right_panel_tab == "speech", "1",
+        rx.cond(
+            WorkspaceState.right_panel_tab == "half", "1",
+            "0",
+        ),
+    )
+
+    # 解析区overflow
+    explanation_overflow = rx.cond(
+        WorkspaceState.right_panel_tab == "explanation",
+        "auto",
+        rx.cond(
+            WorkspaceState.right_panel_tab == "half",
+            "auto",
+            "hidden",
+        ),
+    )
+    # 演讲稿区overflow
+    speech_overflow = rx.cond(
+        WorkspaceState.right_panel_tab == "speech",
+        "auto",
+        rx.cond(
+            WorkspaceState.right_panel_tab == "half",
+            "auto",
+            "hidden",
+        ),
+    )
+
+    return rx.flex(
+        # Tab控制栏
+        _right_panel_tab_bar(),
+        # 解析区（讲题布局始终显示）
+        rx.flex(
+            _speech_explanation_area(),
+            direction="column",
+            width="100%",
+            flex=explanation_flex,
+            overflow_y=explanation_overflow,
+            min_height="0",
+            padding_top="2",
+        ),
+        # 分隔线（各半和演讲稿模式下显示）
+        rx.cond(
+            (WorkspaceState.right_panel_tab == "half") | (WorkspaceState.right_panel_tab == "speech"),
+            rx.divider(color="var(--gray-4)"),
+        ),
+        # 演讲稿区
+        rx.flex(
+            _speech_area(),
+            direction="column",
+            width="100%",
+            flex=speech_flex,
+            overflow_y=speech_overflow,
+            min_height="0",
+            padding_top="2",
+        ),
+        # 底部导航
+        rx.flex(
+            rx.divider(color="var(--gray-5)"),
+            _navigation(),
+            direction="column",
+            spacing="2",
+            width="100%",
+            padding_top="2",
+        ),
+        direction="column",
+        spacing="1",
+        width="100%",
+        height="100%",
+    )
+
+
+def _speech_layout() -> rx.Component:
+    """讲题布局：左侧2/3题干+选项，右侧1/3解析+演讲稿。"""
+    return rx.flex(
+        # 左侧卡片：题干 + 选项 (2/3)
+        rx.box(
+            rx.flex(
+                # 题号+题型
+                rx.cond(
+                    WorkspaceState.current_bank_name != "",
+                    _question_header(),
+                    rx.text("请先选择题库", size="4", color="var(--gray-9)"),
+                ),
+                # 题干
+                _question_text(),
+                # 选项
+                _options_area(),
+                direction="column",
+                spacing="4",
+                width="100%",
+                max_width="50rem",
+            ),
+            background_color=WorkspaceState.whiteboard_bg_color,
+            style={"border_radius": "0.75rem"},
+            box_shadow="0 0.0625rem 0.25rem rgba(0,0,0,0.04)",
+            flex="2",
+            min_width="0",
+            overflow="auto",
+            padding="6",
+            position="relative",
+        ),
+        # 右侧卡片：解析 + 演讲稿 (1/3)
+        rx.box(
+            _speech_right_column(),
+            background_color=WorkspaceState.whiteboard_bg_color,
+            style={"border_radius": "0.75rem"},
+            box_shadow="0 0.0625rem 0.25rem rgba(0,0,0,0.04)",
+            flex="1",
+            min_width="18rem",
+            max_width="30rem",
+            overflow="hidden",
+            padding="4",
+        ),
+        direction="row",
+        spacing="4",
+        width="100%",
+        flex="1",
+        overflow="hidden",
+        padding="4",
+        background_color="#f2f2f0",
     )
 
 
@@ -422,6 +689,35 @@ def _question_switcher() -> rx.Component:
     )
 
 
+def _watermark_image_overlay() -> rx.Component:
+    """水印图片覆盖层 - 页面正中间显示，可调透明度。"""
+    return rx.cond(
+        WorkspaceState.whiteboard_watermark_image != "",
+        rx.box(
+            rx.image(
+                src=rx.cond(
+                    WorkspaceState.whiteboard_watermark_image.startswith("data:") | WorkspaceState.whiteboard_watermark_image.startswith("http://") | WorkspaceState.whiteboard_watermark_image.startswith("https://"),
+                    WorkspaceState.whiteboard_watermark_image,
+                    f"/assets/{WorkspaceState.whiteboard_watermark_image}",
+                ),
+                width="auto",
+                height="auto",
+                max_width="24rem",
+                max_height="24rem",
+                object_fit="contain",
+                opacity=WorkspaceState.watermark_opacity_css,
+            ),
+            position="fixed",
+            top="50%",
+            left="50%",
+            transform="translate(-50%, -50%)",
+            z_index="0",
+            pointer_events="none",
+            user_select="none",
+        ),
+    )
+
+
 def workspace() -> rx.Component:
     """Main workspace page - adaptive two-column layout with soft neutral theme."""
     return rx.box(
@@ -438,39 +734,11 @@ def workspace() -> rx.Component:
                     rx.cond(
                         WorkspaceState.current_bank == {},
                         _empty_state(),
-                        rx.flex(
-                            # Left card
-                            rx.box(
-                                _left_column(),
-                                background_color=WorkspaceState.whiteboard_bg_color,
-                                style={"border_radius": "0.75rem"},
-                                box_shadow="0 0.0625rem 0.25rem rgba(0,0,0,0.04)",
-                                flex="1",
-                                min_width="0",
-                                overflow="hidden",
-                            ),
-                            # Right card (collapsible)
-                            rx.cond(
-                                WorkspaceState.right_panel_collapsed,
-                                rx.fragment(),
-                                rx.box(
-                                    _right_column(),
-                                    background_color=WorkspaceState.whiteboard_bg_color,
-                                    style={"border_radius": "0.75rem"},
-                                    box_shadow="0 0.0625rem 0.25rem rgba(0,0,0,0.04)",
-                                    width="26rem",
-                                    min_width="22rem",
-                                    max_width="30rem",
-                                    overflow="hidden",
-                                ),
-                            ),
-                            direction="row",
-                            spacing="4",
-                            width="100%",
-                            flex="1",
-                            overflow="hidden",
-                            padding="4",
-                            background_color="#f2f2f0",
+                        # 根据布局模式切换
+                        rx.cond(
+                            WorkspaceState.workspace_layout == "speech",
+                            _speech_layout(),
+                            _classic_layout(),
                         ),
                     ),
                     flex="1",
@@ -483,6 +751,11 @@ def workspace() -> rx.Component:
             ),
             # Question switcher
             _question_switcher(),
+            # 水印图片覆盖层（仅在讲题布局时显示）
+            rx.cond(
+                WorkspaceState.workspace_layout == "speech",
+                _watermark_image_overlay(),
+            ),
             position="relative",
             z_index="0",
             width="100%",
@@ -498,7 +771,7 @@ def workspace() -> rx.Component:
                         [i for i in range(6)],
                         lambda _: rx.text(
                             WorkspaceState.whiteboard_watermark,
-                            color="rgba(0,0,0,0.02)",
+                            color=WorkspaceState.watermark_text_color,
                             weight="bold",
                             style={
                                 "font_size": "3rem",

@@ -47,6 +47,11 @@ class AppState(rx.State):
     show_explanation: bool = False
     right_panel_collapsed: bool = False
 
+    # 页面布局模式: "classic" = 旧双栏布局, "speech" = 新讲题布局(默认)
+    workspace_layout: str = "speech"
+    # 右侧面板Tab: "explanation" = 全部展示解析, "half" = 解析演讲稿各一半, "speech" = 全部展示演讲稿
+    right_panel_tab: str = "half"
+
     # Answer history for statistics
     answer_history: dict = {}  # {question_id: {"selected": option_idx, "correct": bool}}
 
@@ -70,6 +75,9 @@ class AppState(rx.State):
     # 白板背景设置
     whiteboard_bg_color: str = "#ffffff"
     whiteboard_watermark: str = ""
+    whiteboard_watermark_image: str = ""  # 水印图片(base64或路径)
+    whiteboard_watermark_opacity: int = 50  # 水印图片透明度(0-100)，默认50%
+    whiteboard_watermark_text_opacity: int = 50  # 水印文字透明度(0-100)，默认50%
 
     def _load_whiteboard_config(self):
         """Load whiteboard background config from file."""
@@ -81,6 +89,9 @@ class AppState(rx.State):
                     config = json.load(f)
                 self.whiteboard_bg_color = config.get("bg_color", "#ffffff")
                 self.whiteboard_watermark = config.get("watermark", "")
+                self.whiteboard_watermark_image = config.get("watermark_image", "")
+                self.whiteboard_watermark_opacity = config.get("watermark_opacity", 50)
+                self.whiteboard_watermark_text_opacity = config.get("watermark_text_opacity", 50)
         except Exception:
             pass
 
@@ -93,6 +104,9 @@ class AppState(rx.State):
             config = {
                 "bg_color": self.whiteboard_bg_color,
                 "watermark": self.whiteboard_watermark,
+                "watermark_image": self.whiteboard_watermark_image,
+                "watermark_opacity": self.whiteboard_watermark_opacity,
+                "watermark_text_opacity": self.whiteboard_watermark_text_opacity,
             }
             with open(fpath, "w", encoding="utf-8") as f:
                 json.dump(config, f, ensure_ascii=False, indent=2)
@@ -115,6 +129,29 @@ class AppState(rx.State):
         """Set whiteboard watermark text."""
         self.whiteboard_watermark = text
         self._save_whiteboard_config()
+
+    @rx.event
+    def set_whiteboard_watermark_opacity(self, value: list):
+        """Set whiteboard watermark image opacity (0-100)."""
+        self.whiteboard_watermark_opacity = int(value[0]) if isinstance(value, list) else int(value)
+        self._save_whiteboard_config()
+
+    @rx.event
+    def set_whiteboard_watermark_text_opacity(self, value: list):
+        """Set whiteboard watermark text opacity (0-100)."""
+        self.whiteboard_watermark_text_opacity = int(value[0]) if isinstance(value, list) else int(value)
+        self._save_whiteboard_config()
+
+    @rx.var
+    def watermark_opacity_css(self) -> str:
+        """Get watermark opacity as CSS value (0-1)."""
+        return f"{self.whiteboard_watermark_opacity / 100}"
+
+    @rx.var
+    def watermark_text_color(self) -> str:
+        """Get watermark text color with dynamic opacity."""
+        opacity = self.whiteboard_watermark_text_opacity / 100
+        return f"rgba(0,0,0,{opacity})"
 
     @rx.var
     def whiteboard_bg_style(self) -> dict:
@@ -259,6 +296,41 @@ class AppState(rx.State):
         """Toggle right panel collapsed state."""
         self.right_panel_collapsed = not self.right_panel_collapsed
 
+    @rx.event
+    def set_workspace_layout(self, layout: str):
+        """Set workspace layout mode."""
+        self.workspace_layout = layout
+
+    @rx.event
+    def set_right_panel_tab(self, tab: str):
+        """Set right panel tab state."""
+        self.right_panel_tab = tab
+
+    @rx.event
+    def set_whiteboard_watermark_image(self, image: str):
+        """Set whiteboard watermark image."""
+        self.whiteboard_watermark_image = image
+        self._save_whiteboard_config()
+
+    @rx.event
+    async def handle_watermark_image_upload(self, files: list[rx.UploadFile]):
+        """Handle watermark image upload."""
+        if not files:
+            return
+        file = files[0]
+        try:
+            content = await file.read()
+            import mimetypes
+            mime_type, _ = mimetypes.guess_type(file.filename or "")
+            if mime_type is None:
+                mime_type = "image/png"
+            b64 = base64.b64encode(content).decode("utf-8")
+            data_uri = f"data:{mime_type};base64,{b64}"
+            self.whiteboard_watermark_image = data_uri
+            self._save_whiteboard_config()
+        except Exception as e:
+            print(f"上传水印图片失败：{e}")
+
     @rx.var
     def current_question(self) -> dict:
         """Get current question data for rendering."""
@@ -306,6 +378,11 @@ class AppState(rx.State):
     def current_question_explanation(self) -> str:
         """Get current question explanation."""
         return self.current_question.get("explanation", "")
+
+    @rx.var
+    def current_question_speech(self) -> str:
+        """Get current question speech script."""
+        return self.current_question.get("speech", "")
 
     @rx.var
     def current_question_id(self) -> str:
@@ -846,21 +923,24 @@ class AdminState(AppState):
                     "question": "下列哪个是Python的内置数据类型？",
                     "options": ["Array", "Dictionary", "List", "Both B and C"],
                     "answer": "D",
-                    "explanation": "Python的内置数据类型包括字典(dict)和列表(list)。Array不是Python的内置类型。"
+                    "explanation": "Python的内置数据类型包括字典(dict)和列表(list)。Array不是Python的内置类型。",
+                    "speech": "这道题考察Python的基础数据类型。大家注意，Array不是Python内置的，需要import array模块才能用。而字典和列表都是Python最常用的内置数据结构。"
                 },
                 {
                     "id": 2,
                     "question": "Python中用于定义函数的关键字是？",
                     "options": ["function", "def", "func", "define"],
                     "answer": "B",
-                    "explanation": "Python使用def关键字来定义函数。"
+                    "explanation": "Python使用def关键字来定义函数。",
+                    "speech": "定义函数是Python编程的基础。记住是def，不是function也不是func，这是Python独有的语法风格。"
                 },
                 {
                     "id": 3,
                     "question": "以下哪个方法用于在列表末尾添加元素？",
                     "options": ["insert()", "append()", "add()", "extend()"],
                     "answer": "B",
-                    "explanation": "append()方法用于在列表末尾添加单个元素。"
+                    "explanation": "append()方法用于在列表末尾添加单个元素。",
+                    "speech": "append和extend容易混淆。append是添加单个元素到末尾，extend是添加一个序列的所有元素。insert可以在指定位置插入。"
                 }
             ]
         }
@@ -887,10 +967,7 @@ class AdminState(AppState):
     def open_edit_questions_new_tab(self, filename: str):
         """Open edit questions page in a new tab."""
         encoded = urllib.parse.quote(filename)
-        return rx.redirect(
-            f"/edit-questions/{encoded}",
-            external=True,
-        )
+        return rx.redirect(f"/edit-questions/{encoded}", is_external=True)
 
     @rx.event
     def clean_import_file(self, filename: str):

@@ -896,6 +896,104 @@ def _tab4_settings() -> rx.Component:
                 align="center",
                 width="100%",
             ),
+            # 水印文字透明度
+            rx.cond(
+                AdminState.whiteboard_watermark != "",
+                rx.flex(
+                    rx.text("水印文字透明度", size="3", weight="medium", color="var(--gray-11)", min_width="6rem"),
+                    rx.slider(
+                        default_value=[AdminState.whiteboard_watermark_text_opacity],
+                        on_value_commit=AdminState.set_whiteboard_watermark_text_opacity,
+                        min=0,
+                        max=100,
+                        step=5,
+                        width="100%",
+                    ),
+                    rx.text(
+                        f"{AdminState.whiteboard_watermark_text_opacity}%",
+                        size="3",
+                        color="var(--gray-11)",
+                        min_width="3rem",
+                        text_align="right",
+                    ),
+                    spacing="3",
+                    align="center",
+                    width="100%",
+                ),
+            ),
+            # 水印图片
+            rx.flex(
+                rx.text("水印图片", size="3", weight="medium", color="var(--gray-11)", min_width="6rem"),
+                rx.cond(
+                    AdminState.whiteboard_watermark_image != "",
+                    rx.flex(
+                        rx.image(
+                            src=rx.cond(
+                                AdminState.whiteboard_watermark_image.startswith("data:") | AdminState.whiteboard_watermark_image.startswith("http://") | AdminState.whiteboard_watermark_image.startswith("https://"),
+                                AdminState.whiteboard_watermark_image,
+                                f"/assets/{AdminState.whiteboard_watermark_image}",
+                            ),
+                            width="3rem",
+                            height="3rem",
+                            object_fit="contain",
+                        ),
+                        rx.button(
+                            rx.icon("trash-2", size=14),
+                            "清除",
+                            size="1",
+                            variant="soft",
+                            color_scheme="red",
+                            on_click=AdminState.set_whiteboard_watermark_image(""),
+                        ),
+                        spacing="2",
+                        align="center",
+                    ),
+                    rx.upload.root(
+                        rx.button(
+                            rx.icon("image-up", size=16),
+                            "上传水印图片",
+                            size="2",
+                            variant="outline",
+                        ),
+                        id="watermark_image_upload",
+                        multiple=False,
+                        accept={
+                            "image/png": [".png"],
+                            "image/jpeg": [".jpg", ".jpeg"],
+                            "image/webp": [".webp"],
+                        },
+                        on_drop=AdminState.handle_watermark_image_upload,
+                    ),
+                ),
+                spacing="3",
+                align="center",
+                width="100%",
+            ),
+            # 水印图片透明度
+            rx.cond(
+                AdminState.whiteboard_watermark_image != "",
+                rx.flex(
+                    rx.text("水印图片透明度", size="3", weight="medium", color="var(--gray-11)", min_width="6rem"),
+                    rx.slider(
+                        default_value=[AdminState.whiteboard_watermark_opacity],
+                        on_value_commit=AdminState.set_whiteboard_watermark_opacity,
+                        min=0,
+                        max=100,
+                        step=5,
+                        width="100%",
+                    ),
+                    rx.text(
+                        f"{AdminState.whiteboard_watermark_opacity}%",
+                        size="3",
+                        color="var(--gray-11)",
+                        min_width="3rem",
+                        text_align="right",
+                    ),
+                    spacing="3",
+                    align="center",
+                    width="100%",
+                ),
+            ),
             rx.divider(),
             # 实时预览
             rx.heading("预览效果", size="4", weight="bold", color="var(--gray-11)"),
@@ -908,7 +1006,7 @@ def _tab4_settings() -> rx.Component:
                                 [i for i in range(4)],
                                 lambda _: rx.text(
                                     AdminState.whiteboard_watermark,
-                                    color="rgba(0,0,0,0.025)",
+                                    color=AdminState.watermark_text_color,
                                     weight="bold",
                                     style={
                                         "font_size": "2.5rem",

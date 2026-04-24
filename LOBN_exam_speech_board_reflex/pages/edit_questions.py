@@ -219,6 +219,23 @@ def question_edit_card(item: dict[str, str | int | list[dict[str, str | bool | i
         width="100%",
     )
 
+    # ---- 演讲稿编辑 ----
+    speech_input = rx.flex(
+        rx.text("演讲稿：", size="2", weight="medium", min_width="3.5rem"),
+        rx.text_area(
+            default_value=item.to(dict).get("speech", ""),
+            on_blur=EditQuestionsState.save_edited_question_field(item.to(dict)["edit_index"], "speech"),
+            size="2",
+            width="100%",
+            min_height="2.5rem",
+            variant="classic",
+            placeholder="输入本题的演讲稿内容...",
+        ),
+        spacing="2",
+        align="start",
+        width="100%",
+    )
+
     # ---- 图片管理 ----
     images_section: rx.Component = rx.flex(
         rx.text("图片：", size="2", weight="medium", min_width="3.5rem"),
@@ -252,6 +269,7 @@ def question_edit_card(item: dict[str, str | int | list[dict[str, str | bool | i
                 options_editor,
             ),
             explanation_input,
+            speech_input,
             images_section,
             direction="column",
             spacing="3",

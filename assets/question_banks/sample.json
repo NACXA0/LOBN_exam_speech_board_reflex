@@ -15,7 +15,8 @@
       "answer": "D",
       "explanation": "Python的内置数据类型包括字典(dict)和列表(list)。Array不是Python的内置类型，需要导入array模块。",
       "images": [],
-      "type": "single"
+      "type": "single",
+      "speech": "这道题考察Python的基础数据类型。大家注意，Array不是Python内置的，需要import array模块才能用。而字典和列表都是Python最常用的内置数据结构。"
     },
     {
       "id": 2,
@@ -29,7 +30,8 @@
       "answer": "B",
       "explanation": "Python使用def关键字来定义函数。",
       "images": [],
-      "type": "single"
+      "type": "single",
+      "speech": "定义函数是Python编程的基础。记住是def，不是function也不是func，这是Python独有的语法风格。"
     },
     {
       "id": 3,
@@ -43,7 +45,8 @@
       "answer": "B",
       "explanation": "append()方法用于在列表末尾添加单个元素。",
       "images": [],
-      "type": "single"
+      "type": "single",
+      "speech": "append和extend容易混淆。append是添加单个元素到末尾，extend是添加一个序列的所有元素。insert可以在指定位置插入。"
     },
     {
       "id": 4,
@@ -57,7 +60,8 @@
       "answer": "B",
       "explanation": "Python使用None表示空值或空对象。",
       "images": [],
-      "type": "single"
+      "type": "single",
+      "speech": "None是Python中表示空值的关键字，注意首字母大写。它和0、空字符串、空列表都不一样，None表示没有值。"
     },
     {
       "id": 5,
@@ -69,9 +73,10 @@
         "-- 注释"
       ],
       "answer": "C",
-      "explanation": "Python使用#符号进行单行注释，使用三引号('''或\"\"\")进行多行注释。",
+      "explanation": "Python使用#符号进行单行注释，使用三引号('''或\"\"\"\")进行多行注释。",
       "images": [],
-      "type": "single"
+      "type": "single",
+      "speech": "Python的注释语法和C/Java不同，单行用#，多行用三引号。//和/* */是C系语言的注释，--是SQL的注释。"
     }
   ]
 }
